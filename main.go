@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"reflect"
 	"time"
 
@@ -19,8 +18,8 @@ const (
 						"mappings" : {
 							"log" : {
 								"properties" : {
-									"app" : { "type" : "string", "index" : "not_analyzed" },
-									"message" : { "type" : "string", "index" : "not_analyzed" },
+									"app" : { "type" : "text", "index" : "not_analyzed" },
+									"message" : { "type" : "text", "index" : "not_analyzed" },
 									"time" : { "type" : "date" }
 								}
 							}
@@ -71,7 +70,6 @@ func createIndexWithLogsIfDoesNotExist(ctx context.Context, client *elastic.Clie
 		Do(ctx)
 
 	if err != nil {
-		log.Fatal("Error: CreateIndex")
 		return err
 	}
 	if !res.Acknowledged {
