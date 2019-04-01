@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"log"
 	"reflect"
 	"time"
 
-	"gopkg.in/olivere/elastic.v3"
+	"github.com/olivere/elastic"
 )
 
 const (
@@ -33,6 +35,8 @@ type Log struct {
 }
 
 func main() {
+	ctx := context.Background()
+
 	client, err := elastic.NewClient(
 		elastic.SetURL("http://localhost:9200"),
 		elastic.SetSniff(false),
@@ -41,19 +45,19 @@ func main() {
 		panic(err)
 	}
 
-	err = createIndexWithLogsIfDoesNotExist(client)
+	err = createIndexWithLogsIfDoesNotExist(ctx, client)
 	if err != nil {
 		panic(err)
 	}
 
-	err = findAndPrintAppLogs(client)
+	err = findAndPrintAppLogs(ctx, client)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func createIndexWithLogsIfDoesNotExist(client *elastic.Client) error {
-	exists, err := client.IndexExists(indexName).Do()
+func createIndexWithLogsIfDoesNotExist(ctx context.Context, client *elastic.Client) error {
+	exists, err := client.IndexExists(indexName).Do(ctx)
 	if err != nil {
 		return err
 	}
@@ -64,19 +68,20 @@ func createIndexWithLogsIfDoesNotExist(client *elastic.Client) error {
 
 	res, err := client.CreateIndex(indexName).
 		Body(indexMapping).
-		Do()
+		Do(ctx)
 
 	if err != nil {
+		log.Fatal("Error: CreateIndex")
 		return err
 	}
 	if !res.Acknowledged {
 		return errors.New("CreateIndex was not acknowledged. Check that timeout value is correct.")
 	}
 
-	return addLogsToIndex(client)
+	return addLogsToIndex(ctx, client)
 }
 
-func addLogsToIndex(client *elastic.Client) error {
+func addLogsToIndex(ctx context.Context, client *elastic.Client) error {
 	for i := 0; i < 10; i++ {
 		l := Log{
 			App:     "myApp",
@@ -88,7 +93,7 @@ func addLogsToIndex(client *elastic.Client) error {
 			Index(indexName).
 			Type(docType).
 			BodyJson(l).
-			Do()
+			Do(ctx)
 
 		if err != nil {
 			return err
@@ -98,14 +103,14 @@ func addLogsToIndex(client *elastic.Client) error {
 	return nil
 }
 
-func findAndPrintAppLogs(client *elastic.Client) error {
+func findAndPrintAppLogs(ctx context.Context, client *elastic.Client) error {
 	termQuery := elastic.NewTermQuery("app", appName)
 
 	res, err := client.Search(indexName).
 		Index(indexName).
 		Query(termQuery).
 		Sort("time", true).
-		Do()
+		Do(ctx)
 
 	if err != nil {
 		return err
