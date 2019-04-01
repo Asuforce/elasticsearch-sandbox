@@ -18,8 +18,8 @@ const (
 						"mappings" : {
 							"log" : {
 								"properties" : {
-									"app" : { "type" : "text", "index" : "not_analyzed" },
-									"message" : { "type" : "text", "index" : "not_analyzed" },
+									"app" : { "type" : "text", "index" : "false" },
+									"message" : { "type" : "text", "index" : "false" },
 									"time" : { "type" : "date" }
 								}
 							}
